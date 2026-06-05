@@ -29,7 +29,7 @@
       mysql_user:
         name: root
         host: localhost
-        password: "Passw0rd!"
+        password: "Passw0rd"
         check_implicit_admin: yes
         state: present
 
@@ -43,7 +43,7 @@
     - name: Loo andmebaasi kasutaja AlmaServeri jaoks
       mysql_user:
         name: tugi_user
-        host: 10.0.15.6 # <-- PANE SIJA OMA ALMASERVERI IP
+        host: 10.0.15.6
         password: "Passw0rd"
         priv: "kasutajatugi_db.*:ALL"
         login_user: root
