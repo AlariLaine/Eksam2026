@@ -1,0 +1,81 @@
+---
+- name: Veebiserveri seadistamine AlmaServeris
+  hosts: webservers
+  become: yes
+
+  tasks:
+    - name: Paigalda Apache ja PHP moodulid
+      dnf:
+        name:
+          - httpd
+          - mod_ssl
+          - php
+          - php-mysqlnd
+          - php-json
+          - php-pdo
+        state: present
+
+    - name: Loo kataloog SSL sertifikaatidele
+      file:
+        path: /etc/httpd/ssl
+        state: directory
+        mode: '0700'
+
+    - name: Genereeri omatoodetud (Self-Signed) SSL sertifikaat FQDN-ile
+      command: >
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048
+        -keyout /etc/httpd/ssl/kasutajatugi.key
+        -out /etc/httpd/ssl/kasutajatugi.crt
+        -subj "/C=EE/ST=Harjumaa/L=Tallinn/O=Oige_AS/OU=IT/CN=kasutajatugi.alari.local"
+      args:
+        creates: /etc/httpd/ssl/kasutajatugi.crt
+
+    - name: Loo virtuaalhosti konfiguratsioon koos SSL-i ja keelatud kataloogisirvimisega
+      copy:
+        dest: /etc/httpd/conf.d/kasutajatugi.conf
+        content: |
+          <VirtualHost *:80>
+              ServerName kasutajatugi.alari.local
+              Redirect permanent / https://alari.local
+          </VirtualHost>
+
+          <VirtualHost *:443>
+              ServerName kasutajatugi.alari.local
+              DocumentRoot /var/www/html
+              
+              SSLEngine on
+              SSLCertificateFile /etc/httpd/ssl/kasutajatugi.crt
+              SSLCertificateKeyFile /etc/httpd/ssl/kasutajatugi.key
+
+              <Directory /var/www/html>
+                  Options -Indexes +FollowSymLinks
+                  AllowOverride All
+                  Require all granted
+              </Directory>
+              
+              ErrorLog logs/kasutajatugi_error.log
+              CustomLog logs/kasutajatugi_access.log combined
+          </VirtualHost>
+      notify: Taaskäivita Apache
+
+    - name: Luba tulemuuris HTTP ja HTTPS teenused
+      firewalld:
+        service: "{{ item }}"
+        permanent: yes
+        state: enabled
+        immediate: yes
+      loop:
+        - http
+        - https
+
+    - name: Veendu, et Apache veebiserver töötab ja on lubatud
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: Taaskäivita Apache
+      service:
+        name: httpd
+        state: restarted

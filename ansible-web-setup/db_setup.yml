@@ -1,0 +1,51 @@
+---
+- name: MariaDB ja phpMyAdmin seadistamine DebianServeris
+  hosts: dbservers
+  become: yes
+
+  tasks:
+    - name: Uuenda pakid ja paigalda MariaDB ning phpMyAdmin
+      apt:
+        name:
+          - mariadb-server
+          - python3-mysqldb
+          - phpmyadmin
+        update_cache: yes
+        state: present
+
+    - name: Luba kauguhendused MariaDB-le
+      lineinfile:
+        path: /etc/mysql/mariadb.conf.d/50-server.cnf
+        regexp: '^bind-address'
+        line: 'bind-address = 0.0.0.0'
+
+    - name: Veendu et MariaDB töötab
+      service:
+        name: mariadb
+        state: restarted
+        enabled: yes
+
+    - name: Muuda root parool
+      mysql_user:
+        name: root
+        host: localhost
+        password: "Passw0rd!"
+        check_implicit_admin: yes
+        state: present
+
+    - name: Loo andmebaas
+      mysql_db:
+        name: kasutajatugi_db
+        login_user: root
+        login_password: "Passw0rd"
+        state: present
+
+    - name: Loo andmebaasi kasutaja AlmaServeri jaoks
+      mysql_user:
+        name: tugi_user
+        host: 10.0.15.6 # <-- PANE SIJA OMA ALMASERVERI IP
+        password: "Passw0rd"
+        priv: "kasutajatugi_db.*:ALL"
+        login_user: root
+        login_password: "Passw0rd"
+        state: present
