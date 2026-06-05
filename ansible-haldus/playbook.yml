@@ -1,0 +1,51 @@
+---
+- name: Linuxi serverite baashaldus ja turvamine
+  hosts: linux_serverid
+  gather_facts: yes
+  become: yes
+
+  vars:
+    hkhk_ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCbnVvg+FL/gg61agUxCuf1+1X7ltfBms96Zm92v9fItz5mjjvN/9MRN1wozA0ea5qpK6XVpB8VuOvcxcjzRsi6A3L0kwwP7XvjLFgaGKz9DqQkArWBqGgBhPblXe0M2jAbG9YVkMn5cO5H9wQUo9cQxhyh+Y8yf3udu8X+eqWVgls+o3dSFDQF61/3IA0ogvAaUHJjLOt7mO8BuKzEYYv1epZKlr3RZSkUKq/6yQiaBqGISnnBjmxjrApPgxRIS67aoiWab5RScqkyEr4Rdq7ICTzJXg9D0l6F3ixfWK9I9KsqwCcGxvOH2qDWuLXZoPoJ8iBzY1+2AKu/UBw8wGSVqylAC+7reZYLnq2GtZdXLt2bWaRfN2EBeF1hilyrfAWkB5FWYokns1K2NvOq9zkZbBjBiW30R3j2wBD3rBnXTBsG45Y0w8Zsm3CGpNVmBaqH60N8jIZn2R0BgcfgLTRrPoHjwQCVPdrYDOH57eZ4iMZkVKaGOtnQAjRhWhB2QRWtuxcH33f/VzCLcIhnwTaAlb9tGwGlO5MKunpMOQ80MGrIpw3sd3xcVwndq7aVTIHXT2PteG3GDc/l38/QAkoeeGYCTNsR/n+kQzOpBzdyOxHNRXPjbju9O4/Y0Wn2cvmJ4fU7Ca278ldoRt7ohuHr1yh3IWnVkRU0pi2MvKed3Q== kasutaja@Ubuntusrv"
+
+  tasks:
+    - name: Tuvasta administraatori grupp vastavalt distrole
+      set_fact:
+        admin_group: "{{ 'wheel' if ansible_facts['os_family'] == 'RedHat' else 'sudo' }}"
+
+    - name: Loo kasutaja hkhk
+      user:
+        name: hkhk
+        shell: /bin/bash
+        groups: "{{ admin_group }}"
+        append: yes
+        state: present
+
+    - name: Seadista SSH avalik võti kasutajale hkhk
+      authorized_key:
+        user: hkhk
+        state: present
+        key: "{{ hkhk_ssh_key }}"
+
+    - name: Seadista paroolita sudo reegel
+      copy:
+        content: "hkhk ALL=(ALL) NOPASSWD:ALL"
+        dest: /etc/sudoers.d/hkhk
+        mode: '0440'
+        validate: /usr/sbin/visudo -cf %s
+
+    - name: Muuda SSH konfiguratsiooni (Turvalisus)
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+      loop:
+        - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+        - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+      notify: Taaskaiwita SSH teenus
+
+  handlers:
+    - name: Taaskaiwita SSH teenus
+      service:
+        name: "{{ 'ssh' if ansible_facts['os_family'] == 'Debian' else 'sshd' }}"
+        state: restarted

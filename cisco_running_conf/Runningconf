@@ -1,0 +1,666 @@
+S1
+
+S1#sh run
+Building configuration...
+
+Current configuration : 1215 bytes
+!
+version 15.0
+no service timestamps log datetime msec
+no service timestamps debug datetime msec
+no service password-encryption
+!
+hostname S1
+!
+!
+!
+ip domain-name too.net
+!
+username admin secret 5 $1$mERr$m1slDCHhMX9jPOb98xavu.
+!
+!
+!
+spanning-tree mode pvst
+spanning-tree extend system-id
+!
+interface FastEthernet0/1
+!
+interface FastEthernet0/2
+!
+interface FastEthernet0/3
+!
+interface FastEthernet0/4
+!
+interface FastEthernet0/5
+!
+interface FastEthernet0/6
+!
+interface FastEthernet0/7
+!
+interface FastEthernet0/8
+!
+interface FastEthernet0/9
+!
+interface FastEthernet0/10
+!
+interface FastEthernet0/11
+!
+interface FastEthernet0/12
+!
+interface FastEthernet0/13
+!
+interface FastEthernet0/14
+!
+interface FastEthernet0/15
+!
+interface FastEthernet0/16
+!
+interface FastEthernet0/17
+!
+interface FastEthernet0/18
+!
+interface FastEthernet0/19
+!
+interface FastEthernet0/20
+!
+interface FastEthernet0/21
+!
+interface FastEthernet0/22
+!
+interface FastEthernet0/23
+!
+interface FastEthernet0/24
+!
+interface GigabitEthernet0/1
+!
+interface GigabitEthernet0/2
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+banner motd ^C
+Autoriseerimata sisselogimine on keelatud!
+^C
+!
+!
+!
+line con 0
+!
+line vty 0 4
+ login
+line vty 5 15
+ login
+!
+!
+!
+!
+end
+
+S2
+
+S2#sh run
+Building configuration...
+
+Current configuration : 1417 bytes
+!
+version 15.0
+no service timestamps log datetime msec
+no service timestamps debug datetime msec
+no service password-encryption
+!
+hostname S2
+!
+enable secret 5 $1$mERr$m1slDCHhMX9jPOb98xavu.
+enable password Passw0rd!
+!
+!
+!
+ip domain-name too.net
+!
+username admin secret 5 $1$mERr$m1slDCHhMX9jPOb98xavu.
+!
+!
+!
+spanning-tree mode pvst
+spanning-tree extend system-id
+!
+interface FastEthernet0/1
+!
+interface FastEthernet0/2
+!
+interface FastEthernet0/3
+!
+interface FastEthernet0/4
+!
+interface FastEthernet0/5
+!
+interface FastEthernet0/6
+!
+interface FastEthernet0/7
+!
+interface FastEthernet0/8
+!
+interface FastEthernet0/9
+!
+interface FastEthernet0/10
+!
+interface FastEthernet0/11
+!
+interface FastEthernet0/12
+!
+interface FastEthernet0/13
+!
+interface FastEthernet0/14
+!
+interface FastEthernet0/15
+!
+interface FastEthernet0/16
+!
+interface FastEthernet0/17
+!
+interface FastEthernet0/18
+!
+interface FastEthernet0/19
+!
+interface FastEthernet0/20
+!
+interface FastEthernet0/21
+!
+interface FastEthernet0/22
+!
+interface FastEthernet0/23
+!
+interface FastEthernet0/24
+!
+interface GigabitEthernet0/1
+!
+interface GigabitEthernet0/2
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+banner motd ^C
+Autoriseerimata sisselogimine on keelatud!
+^C
+!
+!
+!
+line con 0
+ password Passw0rd!
+ login local
+!
+line vty 0 4
+ password Passw0rd!
+ login local
+ transport input ssh
+line vty 5 15
+ password Passw0rd!
+ login local
+ transport input ssh
+!
+!
+!
+!
+end
+
+R1
+R1#sh run
+Building configuration...
+
+Current configuration : 1431 bytes
+!
+version 15.1
+no service timestamps log datetime msec
+no service timestamps debug datetime msec
+no service password-encryption
+!
+hostname R1
+!
+!
+!
+enable secret 5 $1$mERr$m1slDCHhMX9jPOb98xavu.
+enable password Passw0rd!
+!
+!
+ip dhcp excluded-address 192.168.5.1 192.168.5.10
+!
+ip dhcp pool LAN
+ network 192.168.5.0 255.255.255.128
+ default-router 192.168.5.1
+ dns-server 1.1.1.1
+ domain-name too.net
+!
+!
+!
+no ip cef
+no ipv6 cef
+!
+!
+!
+username admin privilege 15 secret 5 $1$mERr$m1slDCHhMX9jPOb98xavu.
+!
+!
+license udi pid CISCO1941/K9 sn FTX1524K53T-
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+ip domain-name too.net
+!
+!
+spanning-tree mode pvst
+!
+!
+!
+!
+!
+!
+interface GigabitEthernet0/0
+ ip address 192.168.5.1 255.255.255.128
+ duplex auto
+ speed auto
+!
+interface GigabitEthernet0/1
+ no ip address
+ duplex auto
+ speed auto
+!
+interface Serial0/0/0
+ ip address 201.10.23.1 255.255.255.252
+!
+interface Serial0/0/1
+ ip address 201.10.23.5 255.255.255.252
+ clock rate 2000000
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+router ospf 1
+ log-adjacency-changes
+ passive-interface GigabitEthernet0/0
+ network 192.168.5.0 0.0.0.127 area 0
+ network 201.10.23.0 0.0.0.3 area 0
+ network 201.10.23.4 0.0.0.3 area 0
+!
+ip classless
+!
+ip flow-export version 9
+!
+!
+!
+banner motd ^C
+Autoriseerimata sisselogimine on keelatud!
+^C
+!
+!
+!
+!
+line con 0
+ password Passw0rd!
+ login local
+!
+line aux 0
+!
+line vty 0 4
+ password Passw0rd!
+ login local
+ transport input ssh
+!
+!
+!
+end
+
+R2
+R2#sh run
+Building configuration...
+
+Current configuration : 1447 bytes
+!
+version 15.1
+no service timestamps log datetime msec
+no service timestamps debug datetime msec
+no service password-encryption
+!
+hostname R2
+!
+!
+!
+enable secret 5 $1$mERr$m1slDCHhMX9jPOb98xavu.
+enable password Passw0rd!
+!
+!
+ip dhcp excluded-address 192.168.6.1 192.168.6.10
+!
+ip dhcp pool LAN1
+ network 192.168.6.0 255.255.255.128
+ default-router 192.168.6.1
+ dns-server 1.1.1.1
+ domain-name too1.net
+!
+!
+!
+no ip cef
+no ipv6 cef
+!
+!
+!
+username admin privilege 15 secret 5 $1$mERr$m1slDCHhMX9jPOb98xavu.
+!
+!
+license udi pid CISCO1941/K9 sn FTX1524Q99S-
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+ip domain-name too.net
+!
+!
+spanning-tree mode pvst
+!
+!
+!
+!
+!
+!
+interface GigabitEthernet0/0
+ ip address 192.168.6.1 255.255.255.128
+ duplex auto
+ speed auto
+!
+interface GigabitEthernet0/1
+ no ip address
+ duplex auto
+ speed auto
+ shutdown
+!
+interface Serial0/0/0
+ ip address 194.25.10.45 255.255.255.252
+!
+interface Serial0/0/1
+ ip address 194.25.10.42 255.255.255.252
+ clock rate 2000000
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+router ospf 1
+ log-adjacency-changes
+ passive-interface GigabitEthernet0/0
+ network 192.168.6.0 0.0.0.127 area 0
+ network 194.25.10.44 0.0.0.3 area 0
+ network 194.25.10.40 0.0.0.3 area 0
+!
+ip classless
+!
+ip flow-export version 9
+!
+!
+!
+banner motd ^C
+Autoriseerimata sisselogimine on keelatud!
+^C
+!
+!
+!
+!
+line con 0
+ password Passw0rd!
+ login local
+!
+line aux 0
+!
+line vty 0 4
+ password Passw0rd!
+ login local
+ transport input ssh
+!
+!
+!
+end
+
+R3
+R3#sh run
+Building configuration...
+
+Current configuration : 1467 bytes
+!
+version 15.1
+no service timestamps log datetime msec
+no service timestamps debug datetime msec
+no service password-encryption
+!
+hostname R3
+!
+!
+!
+enable secret 5 $1$mERr$m1slDCHhMX9jPOb98xavu.
+enable password Passw0rd!
+!
+!
+ip dhcp excluded-address 192.168.6.1 192.168.6.10
+!
+ip dhcp pool LAN1
+ network 192.168.6.0 255.255.255.128
+ default-router 192.168.6.1
+ dns-server 1.1.1.1
+ domain-name too1.net
+!
+!
+!
+no ip cef
+no ipv6 cef
+!
+!
+!
+username admin privilege 15 secret 5 $1$mERr$m1slDCHhMX9jPOb98xavu.
+!
+!
+license udi pid CISCO1941/K9 sn FTX15241G93-
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+ip domain-name too.net
+!
+!
+spanning-tree mode pvst
+!
+!
+!
+!
+!
+!
+interface GigabitEthernet0/0
+ no ip address
+ duplex auto
+ speed auto
+ shutdown
+!
+interface GigabitEthernet0/1
+ no ip address
+ duplex auto
+ speed auto
+ shutdown
+!
+interface Serial0/0/0
+ ip address 201.10.23.2 255.255.255.252
+ clock rate 2000000
+!
+interface Serial0/0/1
+ ip address 194.25.10.41 255.255.255.252
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+router ospf 1
+ log-adjacency-changes
+ passive-interface GigabitEthernet0/0
+ network 192.168.6.0 0.0.0.127 area 0
+ network 194.25.10.44 0.0.0.3 area 0
+ network 194.25.10.40 0.0.0.3 area 0
+ network 201.10.23.0 0.0.0.3 area 0
+!
+ip classless
+!
+ip flow-export version 9
+!
+!
+!
+banner motd ^C
+Autoriseerimata sisselogimine on keelatud!
+^C
+!
+!
+!
+!
+line con 0
+ password Passw0rd!
+ login local
+!
+line aux 0
+!
+line vty 0 4
+ password Passw0rd!
+ login local
+ transport input ssh
+!
+!
+!
+end
+
+R4
+
+R4#sh run
+Building configuration...
+
+Current configuration : 1215 bytes
+!
+version 15.1
+no service timestamps log datetime msec
+no service timestamps debug datetime msec
+no service password-encryption
+!
+hostname R4
+!
+!
+!
+enable secret 5 $1$mERr$m1slDCHhMX9jPOb98xavu.
+enable password Passw0rd!
+!
+!
+!
+!
+!
+!
+no ip cef
+no ipv6 cef
+!
+!
+!
+username admin privilege 15 secret 5 $1$mERr$m1slDCHhMX9jPOb98xavu.
+!
+!
+license udi pid CISCO1941/K9 sn FTX1524XB1Q-
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+ip domain-name too.net
+!
+!
+spanning-tree mode pvst
+!
+!
+!
+!
+!
+!
+interface GigabitEthernet0/0
+ no ip address
+ duplex auto
+ speed auto
+ shutdown
+!
+interface GigabitEthernet0/1
+ no ip address
+ duplex auto
+ speed auto
+ shutdown
+!
+interface Serial0/0/0
+ ip address 194.25.10.45 255.255.255.252
+!
+interface Serial0/0/1
+ ip address 201.10.23.6 255.255.255.252
+ clock rate 2000000
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+router ospf 1
+ log-adjacency-changes
+ network 201.10.23.4 0.0.0.3 area 0
+ network 194.25.10.44 0.0.0.3 area 0
+ network 201.10.23.0 0.0.0.3 area 0
+!
+ip classless
+!
+ip flow-export version 9
+!
+!
+!
+banner motd ^C
+Autoriseerimata sisselogimine on keelatud!
+^C
+!
+!
+!
+!
+line con 0
+ password Passw0rd!
+ login local
+!
+line aux 0
+!
+line vty 0 4
+ password Passw0rd!
+ login local
+ transport input ssh
+!
+!
+!
+end
