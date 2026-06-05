@@ -2,4 +2,4 @@
 
 Siit leiab enamus minu konfiguratsioonid ja seadistused.
 
-#👍
+# 👍
