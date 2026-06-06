@@ -1,0 +1,2 @@
+Sertifikaadi võti (Private Key): /etc/httpd/ssl/kasutajatugi.key
+Sertifikaat ise (Certificate): /etc/httpd/ssl/kasutajatugi.crt
