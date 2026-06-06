@@ -1,0 +1,204 @@
+<?php
+// /var/www/html/admin.php
+session_start();
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+require_once 'db.php';
+
+// NÕUE: Sisselogimise kontroll ANDMEBAASIST koos hashitud parooli kontrolliga
+if (isset($_POST['login'])) {
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+    
+    // 1. Küsime andmebaasist kasutaja andmed AINULT kasutajanime järgi
+    $stmt = $pdo->prepare("SELECT * FROM kasutajad WHERE kasutajanimi = ?");
+    $stmt->execute([$username]);
+    $user = $stmt->fetch();
+    
+    // 2. password_verify võrdleb vormi sisestatud teksti ja andmebaasi salvestatud räsi
+    if ($user && password_verify($password, $user['parool'])) {
+        $_SESSION['admin_logged_in'] = true;
+        $_SESSION['admin_user'] = $user['kasutajanimi'];
+    } else {
+        $viga = "Vale kasutajanimi või parool!";
+    }
+}
+
+// Väljalogimine
+if (isset($_GET['logout'])) {
+    session_destroy();
+    header("Location: admin.php");
+    exit;
+}
+
+// Kui pole sisse logitud, kuvatakse sisselogimise vorm
+if (!isset($_SESSION['admin_logged_in'])) {
+    ?>
+    <!DOCTYPE html>
+    <html lang="et">
+    <head>
+        <meta charset="UTF-8"><title>Admin Sisselogimine</title>
+        <style>
+            body { font-family: sans-serif; background: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+            .login-box { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 350px; }
+            h2 { text-align: center; margin-bottom: 20px; }
+            input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+            button { width: 100%; padding: 10px; background: #0d6efd; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+            .error { color: #842029; background: #f8d7da; padding: 10px; border-radius: 4px; margin-bottom: 15px; text-align: center; }
+        </style>
+    </head>
+    <body>
+        <div class="login-box">
+            <h2>Kasutajatugi Admin</h2>
+            <?php if(isset($viga)) echo "<div class='error'>$viga</div>"; ?>
+            <form method="POST">
+                <input type="text" name="username" placeholder="Kasutajanimi (admin)" required>
+                <input type="password" name="password" placeholder="Parool" required>
+                <button type="submit" name="login">Logi sisse</button>
+            </form>
+            <p style="text-align:center; margin-top:15px;"><a href="index.php">Tagasi avalikule lehele</a></p>
+        </div>
+    </body>
+    </html>
+    <?php
+    exit;
+}
+
+// --- ADMIN TEGEVUSED (NÕUTUD FUNKTSIONAALSUS) ---
+
+// 1. NÕUE: Kustutada pöördumine andmebaasist jäädavalt
+if (isset($_GET['delete'])) {
+    $id = (int)$_GET['delete'];
+    $stmt = $pdo->prepare("DELETE FROM poorduumised WHERE id = ?");
+    $stmt->execute([$id]);
+    header("Location: admin.php");
+    exit;
+}
+
+// 2. NÕUE: Muuta pöördumise staatust
+if (isset($_POST['update_status'])) {
+    $id = (int)$_POST['id'];
+    $uus_staatus = $_POST['staatus'];
+    $stmt = $pdo->prepare("UPDATE poorduumised SET staatus = ? WHERE id = ?");
+    $stmt->execute([$uus_staatus, $id]);
+    header("Location: admin.php");
+    exit;
+}
+
+// 3. NÕUE: Lisada uue pöördumise administraatori poolt
+if (isset($_POST['add_ticket'])) {
+    $nimi = trim($_POST['nimi']);
+    $osakond = trim($_POST['osakond']);
+    $kontakt = trim($_POST['kontakt']);
+    $kirjeldus = trim($_POST['kirjeldus']);
+    $staatus = $_POST['staatus'];
+
+    if (!empty($nimi) && !empty($osakond) && !empty($kontakt) && !empty($kirjeldus)) {
+        $stmt = $pdo->prepare('INSERT INTO poorduumised (nimi, osakond, kontakt, kirjeldus, staatus) VALUES (?, ?, ?, ?, ?)');
+        $stmt->execute([$nimi, $osakond, $kontakt, $kirjeldus, $staatus]);
+    }
+    header("Location: admin.php");
+    exit;
+}
+
+// 4. NÕUE: Kuvada kõiki pöördumisi
+$tickets = $pdo->query("SELECT * FROM poorduumised ORDER BY id DESC")->fetchAll();
+?>
+<!DOCTYPE html>
+<html lang="et">
+<head>
+    <meta charset="UTF-8">
+    <title>Administreerimispaneel - kasutajatugi.alari.local</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { background: #f4f6f9; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #212529; color: white; padding: 15px 20px; border-radius: 4px; margin-bottom: 20px; }
+        .header a { color: #ffc107; text-decoration: none; font-weight: bold; }
+        .section { background: white; padding: 20px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        h2 { margin-bottom: 15px; color: #212529; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; border: 1px solid #dee2e6; text-align: left; }
+        th { background: #f8f9fa; }
+        .btn-del { color: white; background: #dc3545; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9rem; font-weight: bold; }
+        .btn-del:hover { background: #bb2d3b; }
+        .grid-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 600px; }
+        input, select, textarea { padding: 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 1rem; }
+        .submit-btn { background: #0d6efd; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .submit-btn:hover { background: #0b5ed7; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Administreerimisliides (alari.local)</h1>
+        <div>
+            <a href="index.php" style="margin-right: 20px; color: #fff;">Kliendivaade</a>
+            <a href="admin.php?logout=1">Logi välja</a>
+        </div>
+    </div>
+
+    <!-- Pöördumise lisamine admini poolt -->
+    <div class="section">
+        <h2>Lisa uus pöördumine</h2>
+        <form method="POST" class="grid-form">
+            <input type="text" name="nimi" placeholder="Kliendi nimi" required>
+            <input type="text" name="osakond" placeholder="Osakond" required>
+            <input type="text" name="kontakt" placeholder="Kontakt" required>
+            <select name="staatus">
+                <option value="Uus">Uus</option>
+                <option value="Töös">Töös</option>
+                <option value="Lahendatud">Lahendatud</option>
+            </select>
+            <textarea name="kirjeldus" placeholder="Probleemi detailne kirjeldus" style="grid-column: span 2;" rows="3" required></textarea>
+            <button type="submit" name="add_ticket" class="submit-btn" style="grid-column: span 2;">Lisa pöördumine andmebaasi</button>
+        </form>
+    </div>
+
+    <!-- Pöördumiste kuvamine, staatuse muutmine ja kustutamine -->
+    <div class="section">
+        <h2>Kõik esitatud pöördumised</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Klient / Osakond</th>
+                    <th>Kirjeldus</th>
+                    <th>Muuda staatust</th>
+                    <th>Tegevused</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($tickets)): ?>
+                    <tr><td colspan="5" style="text-align:center;">Andmebaasis puuduvad pöördumised.</td></tr>
+                <?php else: ?>
+                    <?php foreach ($tickets as $t): ?>
+                        <tr>
+                            <td><?php echo $t['id']; ?></td>
+                            <td>
+                                <strong><?php echo htmlspecialchars($t['nimi']); ?></strong><br>
+                                <small><?php echo htmlspecialchars($t['osakond']); ?> | <?php echo htmlspecialchars($t['kontakt']); ?></small>
+                            </td>
+                            <td><?php echo nl2br(htmlspecialchars($t['kirjeldus'])); ?></td>
+                            <td>
+                                <form method="POST" action="admin.php">
+                                    <input type="hidden" name="id" value="<?php echo $t['id']; ?>">
+                                    <select name="staatus" onchange="this.form.submit()">
+                                        <option value="Uus" <?php if($t['staatus'] == 'Uus') echo 'selected'; ?>>Uus</option>
+                                        <option value="Töös" <?php if($t['staatus'] == 'Töös') echo 'selected'; ?>>Töös</option>
+                                        <option value="Lahendatud" <?php if($t['staatus'] == 'Lahendatud') echo 'selected'; ?>>Lahendatud</option>
+                                    </select>
+                                    <input type="hidden" name="update_status" value="1">
+                                </form>
+                            </td>
+                            <td>
+                                <a href="admin.php?delete=<?php echo $t['id']; ?>" class="btn-del" onclick="return confirm('Kas oled kindel?')">Kustuta</a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>
