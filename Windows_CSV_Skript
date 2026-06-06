@@ -1,0 +1,84 @@
+Import-Module ActiveDirectory
+
+# 1. SEADISTUSED JA ANDMETE LAADIMINE
+# Määrab domeeni seaded, OU ja loeb CSV failist töötajate andmed.
+$DomainDN = "DC=alari,DC=local"
+$ParentOU = "OU=Kasutajad,$DomainDN"
+$CSVPath = "C:\Users\Administrator\Downloads\töötajad.csv"
+
+$ADDomain = (Get-ADDomain).UserPrincipalNameSuffixes
+if (-not $ADDomain) { $ADDomain = (Get-ADDomain).Forest }
+
+$Users = Import-Csv -Path $CSVPath -Encoding UTF8
+
+
+# 2. KASUTAJATE TÖÖTLEMINE
+# Käib tsükliga läbi iga CSV failis oleva töötaja.
+foreach ($User in $Users) {
+    
+    $Name = $User.Nimi.Trim()
+    $Department = $User.Osakond.Trim()
+    
+    $SplitName = $Name.Split(" ")
+    $FirstName = $SplitName[0]
+    $LastName = $SplitName[-1]
+    
+    # 3. KASUTAJATUNNUSE (SamAccountName) GENEREERIMINE
+    # Loob tunnuse formaadis "eesnimi.perekonnanimi", asendab kõik täpitähed
+    # ja tagab, et nimi oleks unikaalne, kui on olemas, lisab lõppu numbri.
+    $BaseSamAccountName = "$FirstName.$LastName".ToLower()
+    
+    $BaseSamAccountName = $BaseSamAccountName `
+        -replace '[õóòôöø]','o' `
+        -replace '[äáàâå]' ,'a' `
+        -replace '[üúùû]'  ,'u' `
+        -replace '[éèêë]'  ,'e' `
+        -replace '[íìîï]'  ,'i' `
+        -replace 'š'       ,'s' `
+        -replace 'ž'       ,'z'
+    
+    $SamAccountName = $BaseSamAccountName
+    $Counter = 1
+    
+    while (Get-ADUser -Filter "SamAccountName -eq '$SamAccountName'") {
+        $Counter++
+        $SamAccountName = "$BaseSamAccountName$Counter"
+    }
+    
+    # 4. OSAKONNA OU KONTROLL JA LOOMINE
+    # Kontrollib, kas OU on AD-s olemas. 
+    # Kui pole, proovib selle automaatselt luua.
+    $DeptOUPath = "OU=$Department,$ParentOU"
+    
+    try {
+        $ExistingOU = Get-ADOrganizationalUnit -Identity $DeptOUPath -ErrorAction Stop
+    } catch {
+        try {
+            New-ADOrganizationalUnit -Name $Department -Path $ParentOU -ProtectedFromAccidentalDeletion $false -ErrorAction Stop
+            Write-Host "6NNESTUS: Loodi uus osakonna alamüksus: $Department" -ForegroundColor Green
+        } catch {
+            Write-Host "VIGA: Osakonda ei loodud $Department! Teade: $_" -ForegroundColor Red
+            continue
+        }
+    }
+    
+    # 5. KASUTAJA KONTO LOOMINE
+    # Teeb parooli turvaliseks ja loob AD-sse uue kasutaja koos parooliga.
+    $SecurePassword = ConvertTo-SecureString "Koolitus.2026.Suvi!" -AsPlainText -Force
+    
+    try {
+        New-ADUser -Name $Name `
+                   -SamAccountName $SamAccountName `
+                   -UserPrincipalName "$SamAccountName@$ADDomain" `
+                   -Path $DeptOUPath `
+                   -Department $Department `
+                   -AccountPassword $SecurePassword `
+                   -Enabled $true `
+                   -ChangePasswordAtLogon $false `
+                   -PasswordNeverExpires $true -ErrorAction Stop
+                   
+        Write-Host "6NNESTUS: Kasutaja $Name ($SamAccountName) lisati osakonda $Department." -ForegroundColor Cyan
+    } catch {
+        Write-Host "VIGA: Kasutaja $Name loomine eba6nnestus! Teade: $_" -ForegroundColor Red
+    }
+}
